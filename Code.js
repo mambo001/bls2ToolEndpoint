@@ -11,9 +11,57 @@ const DUMP_ID = "1k2jLrOAeCG3vvCxX1xm205fztiXoAEuFuqPDGJk3Ln4";
 // SPR v2
 // const DUMP_ID = "17gZg4NvVTcpQTHf1GcC5CoGsVYzzge5Bldk89V7Gxsc";
 
-const TAB_NAME = "Monitor Logs";
 const SPR_DUMP = SpreadsheetApp.openById(DUMP_ID);
-const MONITOR_LOGS_TAB = SPR_DUMP.getSheetByName(TAB_NAME);
+const MONITOR_LOGS_TAB = SPR_DUMP.getSheetByName("Monitor Logs");
+const QM_REF_TAB = SPR_DUMP.getSheetByName("QM - References");
+
+function setStudyIDRef(array) {
+  if (array == undefined) return
+  const currentRound = getRound();
+  console.log({currentRound})
+
+  const { 'currentRound':scrapedRound, 'logData':scrapedData } = JSON.parse(array);
+  console.log({scrapedRound})
+  console.log({scrapedData})
+
+
+  let { 'currentRound':submittedRound, 'logData':submittedData } = getStudyIDRef();
+  console.log({submittedRound})
+  console.log({submittedData})
+
+  if (currentRound != submittedRound) {
+    QM_REF_TAB.getRange("A2").setValue(array);
+    console.log(submittedRound, {scrapedData})
+  } else {
+    scrapedData != undefined && scrapedData != null ? submittedData = [scrapedData,...submittedData].flat() : ''
+    console.log({submittedData})
+    currentData = QM_REF_TAB.getRange("A2").setValue(JSON.stringify({
+      logData: submittedData,
+      currentRound: submittedRound
+    }));
+  }
+  
+  // let SIDArray = QM_REF_TAB.getRange("A2").setValue(array);
+  
+  // console.log(SIDArray);
+
+  // return {
+  //   message: 'Successfully updated!'
+  // }
+}
+
+function getRound(){
+  let minute = new Date().getMinutes();
+  let round = minute >= 30 ? 2 : 1;
+  return round;
+}
+
+function getStudyIDRef() {
+  let SIDArray = QM_REF_TAB.getRange("A2").getValue();
+  let parsedData = SIDArray != '' ? JSON.parse(SIDArray) : [];
+
+  return parsedData
+}
 
 function _getLastRowSpecial(range) {
   let rowNum = 0;
@@ -123,10 +171,10 @@ function dateAdd(date, interval, units) {
 }
 
 function getDateValue(date) {
-  let d = new Date(date);
-  let hours = d.getHours()
-  let minutes = d.getMinutes()
-  return `${hours}${minutes}`
+  if (!date) return
+  let parsedDate = Date.parse(date);
+  let stringDate = parseInt(parsedDate.toString().substring(0, 7))
+  return stringDate
 }
 
 function getRecentSubmittedSID(){
@@ -149,7 +197,6 @@ function getRecentSubmittedSID(){
       uniqueID
     }
   })
-  console.log(filteredArray)
   return lastThirtyValues.length ? data = {
     recentCases: filteredArray,
     lastRowNumber
@@ -186,33 +233,24 @@ function doPost(e){
   if (flag == 1){
     console.log({flag});
   } else {
-    ////recentCases
-    ////lastRowNumber
-    // studyID
-    // valueDate
-    // uniqueID
+    const columnToCheck = MONITOR_LOGS_TAB.getRange("T:U").getValues();
+    const lastRowNumber = _getLastRowSpecial(columnToCheck);
     const scrapedCasesArray = bodyJSON.map(({ surveyURL,lastUpdatedTime }) => {
       let data;
-      let submittedUID = `${surveyURL.split('configurationId=')[1]}-${getDateValue(lastUpdatedTime)}`
+      let studyID = surveyURL.split('configurationId=')[1];
       return data = {
-        submittedUID,
+        studyID,
         surveyURL,
         lastUpdatedTime
       }
     })
-    const { recentCases,lastRowNumber } = getRecentSubmittedSID();
-    // const recentCases = [{studyID:2882232,valueDate:1620291785152,uniqueID:"2882232-1620291785152"},{studyID:2943417,valueDate:1620291954432,uniqueID:"2943417-1620291954432"},{studyID:2891567,valueDate:1620292279563,uniqueID:"2891567-1620292279563"},{studyID:3012026,valueDate:1620293721974,uniqueID:"3012026-1620293721974"},{studyID:2940847,valueDate:1620295849870,uniqueID:"2940847-1620295849870"},{studyID:2397827,valueDate:1620296576521,uniqueID:"2397827-1620296576521"},{studyID:2460103,valueDate:1620296589646,uniqueID:"2460103-1620296589646"},{studyID:2946198,valueDate:1620298688932,uniqueID:"2946198-1620298688932"},{studyID:2943255,valueDate:1620300284642,uniqueID:"2943255-1620300284642"},{studyID:3004480,valueDate:1620300579487,uniqueID:"3004480-1620300579487"},{studyID:3012083,valueDate:1620301906313,uniqueID:"3012083-1620301906313"},{studyID:2946006,valueDate:1620302086140,uniqueID:"2946006-1620302086140"},{studyID:3007819,valueDate:1620302529687,uniqueID:"3007819-1620302529687"},{studyID:3009905,valueDate:1620302676639,uniqueID:"3009905-1620302676639"},{studyID:2994698,valueDate:1620303965423,uniqueID:"2994698-1620303965423"},{studyID:3007852,valueDate:1620304289104,uniqueID:"3007852-1620304289104"},{studyID:3013355,valueDate:1620304402063,uniqueID:"3013355-1620304402063"},{studyID:2943525,valueDate:1620305016935,uniqueID:"2943525-1620305016935"},{studyID:2943528,valueDate:1620305119062,uniqueID:"2943528-1620305119062"},{studyID:2936241,valueDate:1620305663177,uniqueID:"2936241-1620305663177"},{studyID:3012095,valueDate:1620306131859,uniqueID:"3012095-1620306131859"},{studyID:3013382,valueDate:1620306783988,uniqueID:"3013382-1620306783988"},{studyID:2945678,valueDate:1620306941254,uniqueID:"2945678-1620306941254"},{studyID:3013415,valueDate:1620307304466,uniqueID:"3013415-1620307304466"},{studyID:2943588,valueDate:1620308990078,uniqueID:"2943588-1620308990078"},{studyID:3004903,valueDate:1620309129025,uniqueID:"3004903-1620309129025"},{studyID:2582385,valueDate:1620309715453,uniqueID:"2582385-1620309715453"},{studyID:3013355,valueDate:1620309784865,uniqueID:"3013355-1620309784865"},{studyID:3009977,valueDate:1620309827810,uniqueID:"3009977-1620309827810"},{studyID:2943594,valueDate:1620309976521,uniqueID:"2943594-1620309976521"} ,{studyID:2943594,valueDate:1620309976521,uniqueID:"3007819-1620345729000"}];
-
-    const submittedUIDArray = recentCases.map(({ uniqueID }) => uniqueID);
-    // console.log(submittedCasesArray,uniqueIDArray,lastRowNumber);
-
-    // console.log('fuck',scrapedCasesArray,submittedUIDArray)
-
-    // scrapedCasesArray
-    // submittedUIDArray
-
-    const finalData = scrapedCasesArray.filter(({ submittedUID },i) => {
-        return !submittedUIDArray.includes(submittedUID)
+    // const { recentCases,lastRowNumber } = getRecentSubmittedSID();
+    // const submittedUIDArray = recentCases.map(({ studyID }) => studyID);
+    const submittedUIDArray = getStudyIDRef();
+    const finalData = scrapedCasesArray.filter(({ studyID },i) => {
+      if (submittedUIDArray == undefined) return studyID
+      let { logData,currentRound } = submittedUIDArray;
+      return logData ? !logData.includes(studyID) : studyID
     })
     console.log({submittedUIDArray})
     console.log({scrapedCasesArray})
@@ -224,8 +262,20 @@ function doPost(e){
         c.lastUpdatedTime
       ]
     });
+    const logData = finalData.map(({studyID}) => studyID);
+    const cacheObject = {
+      logData,
+      currentRound: getRound()
+    }
+    console.log({logData})
+    console.log({cacheObject})
+    console.log({lastRowNumber})
+    console.log(dashboardData.length)
+    const stringifiedCacheObject = logData.length ? JSON.stringify(cacheObject) : JSON.stringify([]);
     // Add Cases from RB
-    MONITOR_LOGS_TAB.getRange(lastRowNumber + 1, 20, dashboardData.length, 2).setValues(dashboardData);
+    setStudyIDRef(stringifiedCacheObject);
+    dashboardData.length ? MONITOR_LOGS_TAB.getRange(lastRowNumber + 1, 20, dashboardData.length, 2).setValues(dashboardData) : console.log('no data: ', {dashboardData})
+    
 
   }
   const response  = [{status: 200, message: "OK"}];
